@@ -213,17 +213,5 @@ var main = {
 							}
 						});
 
-
-			/*
-			bar.append('text')
-				.attr('x', 2)
-				.attr('y', function (d, i) {
-					return yScale(d.Open) / 2;
-				})
-				.attr("dy", ".15em")
-				.text(function (d, i) {
-					return d.Open.substr(0, 3);
-				});
-			*/
 	}
 };
