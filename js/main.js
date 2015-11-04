@@ -7,13 +7,78 @@ $(document).ready(function() {
 var main = {
 	url : 'http://query.yahooapis.com/v1/public/yql',
 	startDate : '2015-01-01',
-	endDate : '2015-03-01',
-	chartStartDate : '2015-01-01',
+	endDate : '2015-06-01',
+	chartStartDay : 01,
+	chartStartMonth : 01,
+	chartStartYear : 2015, 
+	chartStartDate : null,
 	chartEndDate : '2015-06-06',
-	minCandleHeight : '50',
+	minCandleHeight : '5',
 	chart : null,
+	xAxis : null,
+	timeScale : null,
+	timeFormat : null,
+	margin : null,
+	width : null,
+	height : null,
+	barHeight : null,
+	yScale : null,
+	data : null,
 	
 	initialize : function() {
+		main.chartStartDate = main.chartStartYear + '-' + main.chartStartMonth + '-' + main.chartStartDay;
+
+		$('.chart').on('mousewheel', function(event) {
+
+		    if (event.deltaY > 0) {
+		    	main.chartStartDay++;
+		    	if (main.chartStartDay > 30) {
+		    		main.chartStartDay = 0;
+		    		main.chartStartMonth++;
+		    		if (main.chartStartMonth > 12) {
+		    			main.chartStartMonth = 0;
+		    			main.chartStartYear++;
+		    		}
+		    	}
+
+		    	main.chartEndDay--;
+		    	if (main.chartEndDay < 0) {
+		    		main.chartEndDay = 30;
+		    		main.chartEndMonth--;
+		    		if (main.chartEndMonth < 0) {
+		    			main.chartEndMonth = 12;
+		    			main.chartEndYear--;
+		    		}
+		    	}
+		    } else {
+		    	main.chartStartDay--;
+		    	if (main.chartStartDay < 0) {
+		    		main.chartStartDay = 30;
+		    		main.chartStartMonth--;
+		    		if (main.chartStartMonth < 0) {
+		    			main.chartStartMonth = 12;
+		    			main.chartStartYear--;
+		    		}
+		    	}
+		    }
+
+		    main.chartStartDate = main.chartStartYear + '-' + main.chartStartMonth + '-' + main.chartStartDay;
+	    	main.timeScale.domain([main.timeFormat.parse(main.chartStartDate), main.timeFormat.parse(main.chartEndDate)]);
+
+			var xAxis = d3.svg.axis()
+						.scale(main.timeScale)
+						.orient("bottom")
+						.tickSize(-main.height, 0, 0);
+
+
+			main.chart.selectAll('.x.axis')
+	    		.call(xAxis);
+
+	    	$('.ticker').empty();
+
+	    	main.createBars(main.data);
+		});
+
 		$('#btn_chart').click(function( event ) {
 	        event.preventDefault();
 
@@ -38,16 +103,18 @@ var main = {
 				
 	        	if (json.query.results) {
 	        		$('.chart').empty();
-	        		main.createChart(json.query.results.quote);	
+	        		main.data = json.query.results.quote;
+	        		main.createChart(main.data);	
+	        		main.createBars(main.data);	
 	        	}
 		});
 	},
 
 	createChart : function( data ) {
-		var margin = {top: 20, right: 30, bottom: 30, left: 40},
-    		width = screen.width - margin.left - margin.right,
-    		height = 700 - margin.top - margin.bottom,
-    		barHeight = 10;
+		main.margin = {top: 20, right: 30, bottom: 30, left: 40},
+    		main.width = screen.width - main.margin.left - main.margin.right,
+    		main.height = 700 - main.margin.top - main.margin.bottom,
+    		main.barHeight = 10;
 
     	var max_val = d3.max(data, function (d) {
 			return d.Open;
@@ -62,35 +129,38 @@ var main = {
 		if (min_domain < 0)
 			min_domain = 0;
 
-		console.log(min_domain + ', ' + max_domain);
-
 		var timeFormat = d3.time.format('%Y-%m-%d');
+			main.timeFormat = timeFormat;
 
 		var timeScale = d3.time.scale()
 							.domain([timeFormat.parse(main.chartStartDate), timeFormat.parse(main.chartEndDate)])
-							.range([0, width])
-							.nice();
+							.range([0, main.width]);
+
+			main.timeScale = timeScale;
 
 		var yScale = d3.scale.linear()
-    		.range([height, 0])
+    		.range([main.height, 0])
     		.domain([min_domain, max_domain]);
 
 		var yAxis = d3.svg.axis()
 		    .scale(yScale)
 		    .orient("left")
-		    .tickSize(-width-100, 0, 0);
+		    .tickSize(-main.width-100, 0, 0);
+
+		    main.yScale = yScale;
+		    main.xAxis = xAxis;
 
 		var xAxis = d3.svg.axis()
-			.scale(timeScale)
+			.scale(main.timeScale)
 			.orient("bottom")
-			.tickSize(-height, 0, 0);
+			.tickSize(-main.height, 0, 0);
     	
 
 		var chart = d3.select(".chart")
-		    .attr("width", width + margin.left + margin.right)
-		    .attr("height", height + margin.top + margin.bottom)
+		    .attr("width", main.width + main.margin.left + main.margin.right)
+		    .attr("height", main.height + main.margin.top + main.margin.bottom)
 		    .append("g")
-    		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    		.attr("transform", "translate(" + main.margin.left + "," + main.margin.top + ")");
 
 		    chart.append('g')
 		    	.attr('class', 'grid y axis')
@@ -103,14 +173,19 @@ var main = {
 
 		    chart.append('bars');
 
-		var bar = chart.selectAll('bars')
+		    main.chart = chart;
+	},
+
+	createBars : function(data) {
+		var bar = main.chart.selectAll('bars')
 						.data( data )
 						.enter().append('g')
+						.attr('class', 'ticker')
 						.attr('transform', function ( d, i ) {
 							if (d.Open >= d.Close) {
-								return 'translate(' + timeScale(timeFormat.parse(d.Date)) + ', ' + yScale(d.Open) +')';	
+								return 'translate(' + main.timeScale(main.timeFormat.parse(d.Date)) + ', ' + main.yScale(d.Open) +')';	
 							} else {
-								return 'translate(' + timeScale(timeFormat.parse(d.Date)) + ', ' + yScale(d.Close) +')';	
+								return 'translate(' + main.timeScale(main.timeFormat.parse(d.Date)) + ', ' + main.yScale(d.Close) +')';	
 							}	
 						})
 						.append('rect')
@@ -126,9 +201,15 @@ var main = {
 						})
 						.attr('height', function (d) {
 							if (d.Open >= d.Close) {
-								return ((d.Open - d.Close) * 2)+(main.minCandleHeight) + 'px';
+								var height = (d.Open - d.Close)*2;
+
+								if (height <= main.minCandleHeight) height = main.minCandleHeight;
+								return height + 'px';
 							} else {
-								return ((d.Close - d.Open) * 2)+(main.minCandleHeight) + 'px';
+								var height = (d.Close - d.Open)*2;
+
+								if (height <= main.minCandleHeight) height = main.minCandleHeight;
+								return height + 'px';
 							}
 						});
 
@@ -144,14 +225,5 @@ var main = {
 					return d.Open.substr(0, 3);
 				});
 			*/
-
-
-
-
-	
 	}
-
-
-
-
 };
