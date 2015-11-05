@@ -8,11 +8,11 @@ var main = {
 	url : 'http://query.yahooapis.com/v1/public/yql',
 	startDate : '2015-01-01',
 	endDate : '2015-06-01',
-	chartStartDay : 01,
-	chartStartMonth : 01,
-	chartStartYear : 2015, 
-	chartStartDate : null,
-	chartEndDate : '2015-06-06',
+	chartEndDay : 01,
+	chartEndMonth : 03,
+	chartEndYear : 2015, 
+	chartStartDate : '2015-00-00',
+	chartEndDate : '2015-06-01',
 	minCandleHeight : '5',
 	chart : null,
 	xAxis : null,
@@ -24,23 +24,38 @@ var main = {
 	barHeight : null,
 	yScale : null,
 	data : null,
+	open : null,
+	close : null,
+	low : null,
+	high: null,
 	
 	initialize : function() {
-		main.chartStartDate = main.chartStartYear + '-' + main.chartStartMonth + '-' + main.chartStartDay;
+		main.open = $('#open');
+		main.close = $('#close');
+		main.low = $('#low');
+		main.high = $('#high');
 
+		Number.prototype.format = function(n, x) {
+		    var re = '\\d(?=(\\d{' + (x || 3) + '})+' + (n > 0 ? '\\.' : '$') + ')';
+		    return this.toFixed(Math.max(0, ~~n)).replace(new RegExp(re, 'g'), '$&,');
+		};
+
+		main.chartEndDate = main.chartEndYear + '-' + main.chartEndMonth + '-' + main.chartEndDay;
+
+		//Rewrite better implementation 
 		$('.chart').on('mousewheel', function(event) {
 
 		    if (event.deltaY > 0) {
-		    	main.chartStartDay++;
-		    	if (main.chartStartDay > 30) {
-		    		main.chartStartDay = 0;
-		    		main.chartStartMonth++;
+		    	main.chartEndDay++;
+		    	if (main.chartEndDay > 30) {
+		    		main.chartEndDay = 0;
+		    		main.chartEndMonth++;
 		    		if (main.chartStartMonth > 12) {
-		    			main.chartStartMonth = 0;
-		    			main.chartStartYear++;
+		    			main.chartEndMonth = 0;
+		    			main.chartEndYear++;
 		    		}
 		    	}
-
+		    	/*
 		    	main.chartEndDay--;
 		    	if (main.chartEndDay < 0) {
 		    		main.chartEndDay = 30;
@@ -50,19 +65,20 @@ var main = {
 		    			main.chartEndYear--;
 		    		}
 		    	}
+		    	*/
 		    } else {
-		    	main.chartStartDay--;
-		    	if (main.chartStartDay < 0) {
-		    		main.chartStartDay = 30;
-		    		main.chartStartMonth--;
-		    		if (main.chartStartMonth < 0) {
-		    			main.chartStartMonth = 12;
-		    			main.chartStartYear--;
+		    	main.chartEndDay--;
+		    	if (main.chartEndDay < 0) {
+		    		main.chartEndDay = 30;
+		    		main.chartEndMonth--;
+		    		if (main.chartEndMonth < 0) {
+		    			main.chartEndMonth = 12;
+		    			main.chartEndYear--;
 		    		}
 		    	}
 		    }
 
-		    main.chartStartDate = main.chartStartYear + '-' + main.chartStartMonth + '-' + main.chartStartDay;
+		    main.chartEndDate = main.chartEndYear + '-' + main.chartEndMonth + '-' + main.chartEndDay;
 	    	main.timeScale.domain([main.timeFormat.parse(main.chartStartDate), main.timeFormat.parse(main.chartEndDate)]);
 
 			var xAxis = d3.svg.axis()
@@ -110,7 +126,17 @@ var main = {
 		});
 	},
 
+	toggleLoading : function ( bool ) {
+		if (bool) {
+			$('#dimload').addClass('active');
+		} else {
+			$('#dimload').removeClass('active');
+		}
+	},
+
 	createChart : function( data ) {
+		main.toggleLoading(true);
+
 		main.margin = {top: 20, right: 30, bottom: 30, left: 40},
     		main.width = screen.width - main.margin.left - main.margin.right,
     		main.height = 700 - main.margin.top - main.margin.bottom,
@@ -174,9 +200,13 @@ var main = {
 		    chart.append('bars');
 
 		    main.chart = chart;
+
+		    main.toggleLoading(false);
 	},
 
 	createBars : function(data) {
+		main.toggleLoading(true);
+
 		var bar = main.chart.selectAll('bars')
 						.data( data )
 						.enter().append('g')
@@ -213,5 +243,25 @@ var main = {
 							}
 						});
 
+			bar.on('mouseover', function (d) {
+				main.open.html('$' + parseInt(d.Open).format(2));
+				main.close.html('$' + parseInt(d.Close).format(2));
+				main.high.html('$' + parseInt(d.High).format(2));
+				main.low.html('$' + parseInt(d.Low).format(2))
+			});
+
+		main.toggleLoading(false);
+
+			/*
+			bar.append('text')
+				.attr('x', 2)
+				.attr('y', function (d, i) {
+					return yScale(d.Open) / 2;
+				})
+				.attr("dy", ".15em")
+				.text(function (d, i) {
+					return d.Open.substr(0, 3);
+				});
+			*/
 	}
 };
