@@ -11,6 +11,9 @@ var main = {
 	chartEndDay : 01,
 	chartEndMonth : 03,
 	chartEndYear : 2015, 
+	chartStartDay : 01,
+	chartStartMonth : 01,
+	chartStartYear : 2015, 
 	chartStartDate : '2015-00-00',
 	chartEndDate : '2015-06-01',
 	minCandleHeight : '5',
@@ -28,7 +31,72 @@ var main = {
 	close : null,
 	low : null,
 	high: null,
-	
+	interval : null,
+	frequency : 5000,
+
+	increaseEndDay : function() {
+		main.chartEndDay++;
+    	if (main.chartEndDay > 30) {
+    		main.chartEndDay = 0;
+    		main.chartEndMonth++;
+    		if (main.chartStartMonth > 12) {
+    			main.chartEndMonth = 0;
+    			main.chartEndYear++;
+    		}
+    	}
+	},
+
+	increaseStartDay : function() {
+		main.chartStartDay++;
+    	if (main.chartStartDay > 30) {
+    		main.chartStartDay = 0;
+    		main.chartStartMonth++;
+    		if (main.chartStartMonth > 12) {
+    			main.chartStartMonth = 0;
+    			main.chartStartYear++;
+    		}
+    	}
+	},
+
+	decreaseEndDay : function() {
+		main.chartEndDay--;
+    	if (main.chartEndDay < 0) {
+    		main.chartEndDay = 30;
+    		main.chartEndMonth--;
+    		if (main.chartEndMonth < 0) {
+    			main.chartEndMonth = 12;
+    			main.chartEndYear--;
+    		}
+    	}
+	},
+
+	decreaseStartDay : function() {
+		main.chartStartDay--;
+    	if (main.chartStartDay < 0) {
+    		main.chartStartDay = 30;
+    		main.chartStartMonth--;
+    		if (main.chartStartMonth < 0) {
+    			main.chartStartMonth = 12;
+    			main.chartStartYear--;
+    		}
+    	}
+	},
+
+	startSimulation : function() {
+		if (main.chart) {
+			//Simulate live trading
+			main.interval = setInterval(function() {
+			    main.increaseEndDay();
+			    main.increaseStartDay();
+			    main.reloadChart();
+			}, main.frequency);	
+		}
+	},
+
+	stopSimulation : function() {
+		clearInterval(main.interval);
+	},
+
 	initialize : function() {
 		main.open = $('#open');
 		main.close = $('#close');
@@ -41,58 +109,18 @@ var main = {
 		};
 
 		main.chartEndDate = main.chartEndYear + '-' + main.chartEndMonth + '-' + main.chartEndDay;
+		main.chartStartDate = main.chartStartYear + '-' + main.chartStartMonth + '-' + main.chartStartDay;
 
 		//Rewrite better implementation 
 		$('.chart').on('mousewheel', function(event) {
 
 		    if (event.deltaY > 0) {
-		    	main.chartEndDay++;
-		    	if (main.chartEndDay > 30) {
-		    		main.chartEndDay = 0;
-		    		main.chartEndMonth++;
-		    		if (main.chartStartMonth > 12) {
-		    			main.chartEndMonth = 0;
-		    			main.chartEndYear++;
-		    		}
-		    	}
-		    	/*
-		    	main.chartEndDay--;
-		    	if (main.chartEndDay < 0) {
-		    		main.chartEndDay = 30;
-		    		main.chartEndMonth--;
-		    		if (main.chartEndMonth < 0) {
-		    			main.chartEndMonth = 12;
-		    			main.chartEndYear--;
-		    		}
-		    	}
-		    	*/
+		    	main.increaseEndDay();
 		    } else {
-		    	main.chartEndDay--;
-		    	if (main.chartEndDay < 0) {
-		    		main.chartEndDay = 30;
-		    		main.chartEndMonth--;
-		    		if (main.chartEndMonth < 0) {
-		    			main.chartEndMonth = 12;
-		    			main.chartEndYear--;
-		    		}
-		    	}
+		    	main.decreaseStartDay();
 		    }
 
-		    main.chartEndDate = main.chartEndYear + '-' + main.chartEndMonth + '-' + main.chartEndDay;
-	    	main.timeScale.domain([main.timeFormat.parse(main.chartStartDate), main.timeFormat.parse(main.chartEndDate)]);
-
-			var xAxis = d3.svg.axis()
-						.scale(main.timeScale)
-						.orient("bottom")
-						.tickSize(-main.height, 0, 0);
-
-
-			main.chart.selectAll('.x.axis')
-	    		.call(xAxis);
-
-	    	$('.ticker').empty();
-
-	    	main.createBars(main.data);
+		    main.reloadChart();
 		});
 
 		$('#btn_chart').click(function( event ) {
@@ -108,6 +136,45 @@ var main = {
 	        }
 	    });
 
+
+		$('#simulatelive').click(function(event) {
+			/* Act on the event */
+			if ($('#simulatelive').prop('checked')) {
+				main.startSimulation();
+			} else {
+				main.stopSimulation();
+			}
+		});
+
+		$('#5s').click(function(event) {
+			/* Act on the event */
+			main.frequency = 5000;
+		});
+
+
+		$('#3s').click(function(event) {
+			/* Act on the event */
+			main.frequency = 1000;
+		});
+	},
+
+	reloadChart : function() {
+		main.chartEndDate = main.chartEndYear + '-' + main.chartEndMonth + '-' + main.chartEndDay;
+    	main.chartStartDate = main.chartStartYear + '-' + main.chartStartMonth + '-' + main.chartStartDay;
+    	main.timeScale.domain([main.timeFormat.parse(main.chartStartDate), main.timeFormat.parse(main.chartEndDate)]);
+
+		var xAxis = d3.svg.axis()
+					.scale(main.timeScale)
+					.orient("bottom")
+					.tickSize(-main.height, 0, 0);
+
+
+		main.chart.selectAll('.x.axis')
+    		.call(xAxis);
+
+    	$('.ticker').empty();
+
+    	main.createBars(main.data);
 	},
 
 	getHistory : function(symbol) {
@@ -244,10 +311,10 @@ var main = {
 						});
 
 			bar.on('mouseover', function (d) {
-				main.open.html('$' + parseInt(d.Open).format(2));
-				main.close.html('$' + parseInt(d.Close).format(2));
-				main.high.html('$' + parseInt(d.High).format(2));
-				main.low.html('$' + parseInt(d.Low).format(2))
+				main.open.html('$' + parseInt(d.Open).format(1));
+				main.close.html('$' + parseInt(d.Close).format(1));
+				main.high.html('$' + parseInt(d.High).format(1));
+				main.low.html('$' + parseInt(d.Low).format(1))
 			});
 
 		main.toggleLoading(false);
