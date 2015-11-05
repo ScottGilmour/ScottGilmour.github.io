@@ -30,7 +30,7 @@
 			}
 			
 			.search {
-				margin: 10 5 5 5px;
+				margin: 10 5 0 5px;
 				height: auto;
 				width: auto;
 			}
@@ -44,8 +44,12 @@
 			}
 
 			#open, #close, #high, #low, #volume {
-				margin: 5 5 5 5px;
+				margin: 10 5 0 5px;
 				font-size: 4em;
+			}
+			
+			#simulate {
+				margin-top: 10px;
 			}
 
 			.grid .tick line {
@@ -60,7 +64,7 @@
 	</head>
 	<body>
 
-		<div class="ui two column grid">
+		<div class="ui four column grid">
 		  <div class="row">
 		    <div class="column">
 			    <div class="search">
@@ -109,6 +113,46 @@
 				    </div>
 				  </div>
 				</div>
+		    </div>
+		    <div class="column">
+			
+		    	<div class="ui form">
+				  <div class="grouped fields">
+				    <label>Frequency</label>
+				    <div class="field">
+				      <div class="ui slider checkbox">
+				        <input type="radio" id="5s" name="throughput" checked="checked">
+				        <label>every 5 seconds</label>
+				      </div>
+				    </div>
+				    <div class="field">
+				      <div class="ui slider checkbox">
+				        <input type="radio" id="3s" name="throughput">
+				        <label>every 3 seconds</label>
+				      </div>
+				    </div>
+				  </div>
+				</div>
+
+		    </div>
+		    <div class="column">
+			    <div class="ui form">
+			    	<div class="grouped fields">
+			    		<div class="field">
+			    			<div id="simulate" class="ui slider checkbox">
+							  <input type="checkbox" id="simulatelive" name="newsletter">
+							  <label>Simulate live trading</label>
+							</div>
+			    		</div>
+
+			    		<div class="field">
+			    			<div id="simulate" class="ui slider checkbox">
+							  <input type="checkbox" id="simulatelive" name="newsletter">
+							  <label>Show Volume</label>
+							</div>
+			    		</div>
+			    	</div>
+			    </div>
 		    </div>
 		  </div>
 		</div>
